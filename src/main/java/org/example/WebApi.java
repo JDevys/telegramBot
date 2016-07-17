@@ -12,16 +12,19 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.example.models.Update;
+import org.openercuss.jtelegrambot.telegram.Update;
 
 /**
  *
@@ -100,7 +103,7 @@ public class WebApi extends HttpServlet {
           // display to console
           out.println(update);
           logger.warning(mapper.writeValueAsString(update));
-          _sendGreeting(update.message.chat.id, update.message.from.first_name);
+          _sendGreeting(update.getMessage().getChat().getId(), update.getMessage().getFrom().getFirst_name());
         } catch (JsonGenerationException e) {
           e.printStackTrace();
           logger.severe(e.getMessage());
@@ -149,8 +152,17 @@ public class WebApi extends HttpServlet {
     }
 
     private void _sendGreeting(int chatId, String userFirstName) {
-        String greeting = String.format("Hi %1$s", userFirstName);
-        String url = String.format(telegramUri, chatId, greeting);
+        String encodedGreet;
+        String greetMessage = String.format("Hi %1$s", userFirstName);
+        try {
+            encodedGreet = URLEncoder.encode(greetMessage, "UTF-8");
+        } catch (UnsupportedEncodingException ex) {
+            encodedGreet = greetMessage;
+            logger.severe(ex.getMessage());
+        }
+        
+        logger.severe(encodedGreet);
+        String url = String.format(telegramUri, chatId, encodedGreet);
         try {
             URL parsedUrl = new URL(url);
             URLConnection connection = parsedUrl.openConnection();
