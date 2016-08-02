@@ -24,13 +24,18 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.openercuss.jtelegrambot.ChatFacade;
+import org.openercuss.jtelegrambot.telegram.Message;
 import org.openercuss.jtelegrambot.telegram.Update;
+import org.openercuss.jtelegrambot.telegram.responses.SendMessageResponse;
 
 /**
  *
  * @author JDevys
  */
 public class WebApi extends HttpServlet {
+    private ChatFacade chatFacade = ChatFacade.GetInstance();
+    private MessageProcessor processor = MessageProcessor.getInstance();
     private static final Logger logger = Logger.getLogger(WebApi.class.getName());
     private static final String telegramUri = "https://api.telegram.org/bot211159227:AAGHIU36aeTupEhczsRjqC--PcbiMnq6zYg/sendMessage?chat_id=%1$s&text=%2$s";
 
@@ -101,9 +106,11 @@ public class WebApi extends HttpServlet {
           // read from file, convert it to user class
           Update update = mapper.readValue(request.getReader(), Update.class);
           // display to console
-          out.println(update);
-          logger.warning(mapper.writeValueAsString(update));
-          _sendGreeting(update.getMessage().getChat().getId(), update.getMessage().getFrom().getFirst_name());
+          //SendMessageResponse sendResponse = mapper.readValue(_sendGreeting(update), SendMessageResponse.class);
+          //logger.warning(mapper.writeValueAsString(sendResponse.getResult()));
+          processor.process(update);
+          out.println(mapper.writeValueAsString(update));
+          logger.severe(mapper.writeValueAsString(update));
         } catch (JsonGenerationException e) {
           e.printStackTrace();
           logger.severe(e.getMessage());
@@ -151,36 +158,46 @@ public class WebApi extends HttpServlet {
         return builder.toString();
     }
 
-    private void _sendGreeting(int chatId, String userFirstName) {
-        String encodedGreet;
+    private String _sendGreeting(Update update) {
+        //String encodedGreet;
+        String userFirstName = update.getMessage().getFrom().getFirst_name();
         String greetMessage = String.format("Hi %1$s", userFirstName);
+        String messageJson = "";
+        
         try {
+            messageJson = chatFacade.sendReply(update, greetMessage);
+            /*try {
             encodedGreet = URLEncoder.encode(greetMessage, "UTF-8");
-        } catch (UnsupportedEncodingException ex) {
+            } catch (UnsupportedEncodingException ex) {
             encodedGreet = greetMessage;
             logger.severe(ex.getMessage());
-        }
-        
-        logger.severe(encodedGreet);
-        String url = String.format(telegramUri, chatId, encodedGreet);
-        try {
+            }
+            
+            logger.severe(encodedGreet);
+            String url = String.format(telegramUri, chatId, encodedGreet);
+            try {
             URL parsedUrl = new URL(url);
             URLConnection connection = parsedUrl.openConnection();
             connection.connect();
             BufferedReader br = new BufferedReader(
-                new InputStreamReader(connection.getInputStream())
+            new InputStreamReader(connection.getInputStream())
             );
             StringBuilder builder = new StringBuilder();
             String line = "";
             while((line = br.readLine()) != null) {
-                builder.append(line);
+            builder.append(line);
             } 
             logger.info(builder.toString());
-        } catch (MalformedURLException ex) {
+            } catch (MalformedURLException ex) {
             logger.severe(ex.getMessage());
+            } catch (IOException ex) {
+            logger.severe(ex.getMessage());
+            }*/
         } catch (IOException ex) {
             logger.severe(ex.getMessage());
         }
+        
+        return messageJson;
     }
 
 }
